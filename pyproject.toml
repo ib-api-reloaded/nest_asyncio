@@ -1,5 +1,37 @@
-[build-system]
-requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4.3"]
-build-backend = "setuptools.build_meta"
+[tool.poetry]
+name = "nest_asyncio"
+version = "1.6.0"
+description = "Patch asyncio to allow nested event loops"
+authors = ["Ewald R. de Wit"]
+license = "BSD"
+readme = "README.rst"
+homepage = "https://github.com/erdewit/nest_asyncio"
+repository = "https://github.com/erdewit/nest_asyncio"
+keywords = ["asyncio", "nested", "eventloop"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Framework :: AsyncIO"
+]
 
-[tool.setuptools_scm]
+[tool.poetry.dependencies]
+python = "^3.5"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.flake8]
+ignore = ["D205", "D400", "W503"]
