@@ -6,7 +6,7 @@ import nest_asyncio
 
 
 def exception_handler(loop, context):
-    print('Exception:', context)
+    print("Exception:", context)
 
 
 class NestTest(unittest.TestCase):
@@ -27,7 +27,6 @@ class NestTest(unittest.TestCase):
         return 42
 
     def test_nesting(self):
-
         async def f1():
             result = self.loop.run_until_complete(self.coro())
             self.assertEqual(result, await self.coro())
@@ -42,7 +41,6 @@ class NestTest(unittest.TestCase):
         self.assertEqual(result, 42)
 
     def test_ensure_future_with_run_until_complete(self):
-
         async def f():
             task = asyncio.ensure_future(self.coro())
             return self.loop.run_until_complete(task)
@@ -51,11 +49,11 @@ class NestTest(unittest.TestCase):
         self.assertEqual(result, 42)
 
     def test_ensure_future_with_run_until_complete_with_wait(self):
-
         async def f():
             task = asyncio.ensure_future(self.coro())
             done, pending = self.loop.run_until_complete(
-                asyncio.wait([task], return_when=asyncio.ALL_COMPLETED))
+                asyncio.wait([task], return_when=asyncio.ALL_COMPLETED)
+            )
             task = done.pop()
             return task.result()
 
@@ -63,7 +61,6 @@ class NestTest(unittest.TestCase):
         self.assertEqual(result, 42)
 
     def test_timeout(self):
-
         async def f1():
             await asyncio.sleep(0.1)
 
@@ -74,7 +71,6 @@ class NestTest(unittest.TestCase):
             self.loop.run_until_complete(f2())
 
     def test_two_run_until_completes_in_one_outer_loop(self):
-
         async def f1():
             self.loop.run_until_complete(asyncio.sleep(0.02))
             return 4
@@ -83,14 +79,14 @@ class NestTest(unittest.TestCase):
             self.loop.run_until_complete(asyncio.sleep(0.01))
             return 2
 
-        result = self.loop.run_until_complete(
-            asyncio.gather(f1(), f2()))
+        result = self.loop.run_until_complete(asyncio.gather(f1(), f2()))
         self.assertEqual(result, [4, 2])
 
-    @unittest.skipIf(sys.version_info < (3, 7, 0), 'No contextvars module')
+    @unittest.skipIf(sys.version_info < (3, 7, 0), "No contextvars module")
     def test_contextvars(self):
         from contextvars import ContextVar
-        var = ContextVar('var')
+
+        var = ContextVar("var")
         var.set(0)
 
         async def set_val():
@@ -105,5 +101,5 @@ class NestTest(unittest.TestCase):
         self.assertEqual(result, 42)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
