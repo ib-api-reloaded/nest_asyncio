@@ -21,6 +21,8 @@ Recent compatibility work in this repository adapts ideas first explored in
 then rewrites them for the ``nest_asyncio`` codebase and packaging model.
 The first imported idea is Python 3.12+ support for
 ``asyncio.run(..., loop_factory=...)``.
+The second is Python 3.14 mixed-task handling when ``apply()`` runs inside an
+already-active task.
 
 Installation
 ------------

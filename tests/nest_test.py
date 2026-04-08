@@ -145,6 +145,26 @@ class NestTest(unittest.TestCase):
             """
         )
 
+    @unittest.skipIf(sys.version_info < (3, 14, 0), "Python 3.14+ only")
+    def test_apply_inside_running_task_preserves_current_task(self):
+        self.run_snippet(
+            """
+            import asyncio
+            import warnings
+            import nest_asyncio
+
+            warnings.filterwarnings("default")
+
+            async def work():
+                with warnings.catch_warnings(record=True) as caught:
+                    nest_asyncio.apply()
+                    assert asyncio.tasks.current_task() is not None
+                    assert not caught, [str(item.message) for item in caught]
+
+            asyncio.run(work())
+            """
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

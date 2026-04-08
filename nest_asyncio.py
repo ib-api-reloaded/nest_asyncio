@@ -90,7 +90,7 @@ def _patch_asyncio():
     # Use module level _current_tasks, all_tasks and patch run method.
     if hasattr(asyncio, "_nest_patched"):
         return
-    if sys.version_info >= (3, 6, 0):
+    if sys.version_info >= (3, 6, 0) and sys.version_info < (3, 14, 0):
         asyncio.Task = asyncio.tasks._CTask = asyncio.tasks.Task = asyncio.tasks._PyTask
         asyncio.Future = asyncio.futures._CFuture = asyncio.futures.Future = (
             asyncio.futures._PyFuture
@@ -184,15 +184,26 @@ def _patch_loop(loop):
             handle = ready.popleft()
             if not handle._cancelled:
                 # preempt the current task so that that checks in
-                # Task.__step do not raise
-                curr_task = curr_tasks.pop(self, None)
+                # Task.__step do not raise. On Python 3.14+, adapt the
+                # mixed-task approach from Chaoses-Ib/nest-asyncio2 so a loop
+                # already running C tasks can still be patched safely.
+                if sys.version_info < (3, 14, 0):
+                    curr_task = curr_tasks.pop(self, None)
+                else:
+                    try:
+                        curr_task = asyncio.tasks._swap_current_task(self, None)
+                    except KeyError:
+                        curr_task = None
 
                 try:
                     handle._run()
                 finally:
                     # restore the current task
                     if curr_task is not None:
-                        curr_tasks[self] = curr_task
+                        if sys.version_info < (3, 14, 0):
+                            curr_tasks[self] = curr_task
+                        else:
+                            asyncio.tasks._swap_current_task(self, curr_task)
 
         handle = None
 
