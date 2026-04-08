@@ -165,6 +165,31 @@ class NestTest(unittest.TestCase):
             """
         )
 
+    def test_nested_run_drains_call_soon_done_callbacks(self):
+        self.run_snippet(
+            """
+            import asyncio
+            import nest_asyncio
+
+            nest_asyncio.apply()
+            seen = []
+
+            async def work():
+                loop = asyncio.get_running_loop()
+                task = asyncio.create_task(asyncio.sleep(0))
+                task.add_done_callback(
+                    lambda _: loop.call_soon(lambda: seen.append("soon"))
+                )
+                await task
+
+            async def outer():
+                asyncio.run(work())
+
+            asyncio.run(outer())
+            assert seen == ["soon"], seen
+            """
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

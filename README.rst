@@ -23,6 +23,8 @@ The first imported idea is Python 3.12+ support for
 ``asyncio.run(..., loop_factory=...)``.
 The second is Python 3.14 mixed-task handling when ``apply()`` runs inside an
 already-active task.
+The third is draining ``call_soon`` callbacks scheduled during nested task
+completion before ``run_until_complete()`` returns.
 
 Installation
 ------------
@@ -66,6 +68,15 @@ Using ``poetry``:
 
     poetry install --with dev
     poetry run python -m unittest tests.nest_test
+
+Acknowledgements
+----------------
+
+Some recent compatibility fixes and regression tests were adapted from
+``Chaoses-Ib/nest-asyncio2`` after review and then integrated back into this
+core project. The code here intentionally keeps the original ``nest_asyncio``
+public interface while incorporating the useful runtime fixes discovered in
+that fork.
 
 .. |Build| image:: https://github.com/erdewit/nest_asyncio/actions/workflows/test.yml/badge.svg?branche=master
    :alt: Build

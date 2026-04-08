@@ -151,6 +151,11 @@ def _patch_loop(loop):
                     break
             if not f.done():
                 raise RuntimeError("Event loop stopped before Future completed.")
+            # Adapted from Chaoses-Ib/nest-asyncio2: task completion can enqueue
+            # done callbacks via call_soon(), and nested run_until_complete()
+            # needs one more pass to drain those callbacks before returning.
+            if self._ready:
+                self._run_once()
             return f.result()
 
     def _run_once(self):
