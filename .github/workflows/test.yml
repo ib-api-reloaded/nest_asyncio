@@ -61,7 +61,7 @@ jobs:
       - name: MyPy
         if: ${{ !startsWith(matrix.python-version, 'pypy') }}
         run: |
-          uv run --python "${{ steps.setup-python.outputs.python-path }}" --no-sync mypy nest_asyncio.py
+          uv run --python "${{ steps.setup-python.outputs.python-path }}" --no-sync mypy nest_asyncio
 
   poetry:
     name: poetry (${{ matrix.python-version }})

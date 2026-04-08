@@ -5,8 +5,16 @@ import asyncio.events as events
 import os
 import sys
 import threading
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from heapq import heappop
+
+from ._compat import get_event_loop_for_apply
+from ._compat import patch_asyncio_get_event_loop
+from ._compat import patch_task_and_future_types
+from ._compat import run as compat_run
+from ._loop import drain_ready
+from ._loop import preempt_current_task
+from ._loop import restore_current_task
 
 
 def apply(loop=None):
@@ -15,106 +23,36 @@ def apply(loop=None):
     _patch_policy()
     _patch_tornado()
 
-    loop = loop or _get_event_loop()
+    loop = loop or get_event_loop_for_apply()
     if loop is not None:
         _patch_loop(loop)
 
 
-if sys.version_info < (3, 12, 0):
-
-    def _get_event_loop():
-        return asyncio.get_event_loop()
-
-    def _run(main, *, debug=False):
-        loop = asyncio.get_event_loop()
-        loop.set_debug(debug)
-        task = asyncio.ensure_future(main)
-        try:
-            return loop.run_until_complete(task)
-        finally:
-            if not task.done():
-                task.cancel()
-                with suppress(asyncio.CancelledError):
-                    loop.run_until_complete(task)
-
-else:
-
-    def _get_event_loop():
-        if sys.version_info < (3, 14, 0):
-            loop = events._get_running_loop()
-            if loop is None:
-                policy = events.get_event_loop_policy()
-                loop = policy._local._loop
-            return loop
-        try:
-            return asyncio.get_event_loop()
-        except RuntimeError:
-            return None
-
-    def _run(main, *, debug=None, loop_factory=None):
-        # Adapted from Chaoses-Ib/nest-asyncio2: Python 3.12+ adds
-        # loop_factory to asyncio.run(), and 3.12+ no longer tolerates the
-        # older "always fetch/create through get_event_loop()" approach.
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = _get_event_loop()
-            if loop is None:
-                if loop_factory is None:
-                    loop_factory = asyncio.new_event_loop
-                loop = loop_factory()
-                asyncio.set_event_loop(loop)
-
-        _patch_loop(loop)
-        if debug is not None:
-            loop.set_debug(debug)
-        task = asyncio.ensure_future(main, loop=loop)
-        try:
-            return loop.run_until_complete(task)
-        finally:
-            if not task.done():
-                task.cancel()
-                with suppress(asyncio.CancelledError):
-                    loop.run_until_complete(task)
-
-
 def _patch_asyncio():
-    """Patch asyncio module to use pure Python tasks and futures."""
-
-    def _get_event_loop(stacklevel=3):
-        loop = events._get_running_loop()
-        if loop is None:
-            loop = events.get_event_loop_policy().get_event_loop()
-        return loop
-
-    # Use module level _current_tasks, all_tasks and patch run method.
+    """Patch asyncio module with the interpreter-specific compatibility shims."""
     if hasattr(asyncio, "_nest_patched"):
         return
-    if sys.version_info >= (3, 6, 0) and sys.version_info < (3, 14, 0):
-        asyncio.Task = asyncio.tasks._CTask = asyncio.tasks.Task = asyncio.tasks._PyTask
-        asyncio.Future = asyncio.futures._CFuture = asyncio.futures.Future = (
-            asyncio.futures._PyFuture
-        )
-        if hasattr(asyncio.tasks, "_py_current_task"):
-            asyncio.tasks.current_task = asyncio.current_task = (
-                asyncio.tasks._py_current_task
-            )
-        if hasattr(asyncio.tasks, "_py_all_tasks"):
-            asyncio.tasks.all_tasks = asyncio.all_tasks = asyncio.tasks._py_all_tasks
+    patch_task_and_future_types()
     if sys.version_info < (3, 7, 0):
         asyncio.tasks._current_tasks = asyncio.tasks.Task._current_tasks
         asyncio.all_tasks = asyncio.tasks.Task.all_tasks
-    if sys.version_info >= (3, 9, 0) and sys.version_info < (3, 14, 0):
-        events._get_event_loop = events.get_event_loop = asyncio.get_event_loop = (
-            _get_event_loop
-        )
+    patch_asyncio_get_event_loop()
     asyncio.run = _run
     asyncio._nest_patched = True
 
 
+def _run(main, *, debug=False, loop_factory=None):
+    """Delegate to the version-aware asyncio.run compatibility helper."""
+    return compat_run(
+        main,
+        debug=debug,
+        loop_factory=loop_factory,
+        patch_loop=_patch_loop,
+    )
+
+
 def _patch_policy():
     """Patch the policy to always return a patched loop."""
-
     if sys.version_info >= (3, 14, 0):
         return
 
@@ -151,11 +89,7 @@ def _patch_loop(loop):
                     break
             if not f.done():
                 raise RuntimeError("Event loop stopped before Future completed.")
-            # Adapted from Chaoses-Ib/nest-asyncio2: task completion can enqueue
-            # done callbacks via call_soon(), and nested run_until_complete()
-            # needs one more pass to drain those callbacks before returning.
-            if self._ready:
-                self._run_once()
+            drain_ready(self)
             return f.result()
 
     def _run_once(self):
@@ -188,27 +122,11 @@ def _patch_loop(loop):
                 break
             handle = ready.popleft()
             if not handle._cancelled:
-                # preempt the current task so that that checks in
-                # Task.__step do not raise. On Python 3.14+, adapt the
-                # mixed-task approach from Chaoses-Ib/nest-asyncio2 so a loop
-                # already running C tasks can still be patched safely.
-                if sys.version_info < (3, 14, 0):
-                    curr_task = curr_tasks.pop(self, None)
-                else:
-                    try:
-                        curr_task = asyncio.tasks._swap_current_task(self, None)
-                    except KeyError:
-                        curr_task = None
-
+                curr_task = preempt_current_task(self, curr_tasks)
                 try:
                     handle._run()
                 finally:
-                    # restore the current task
-                    if curr_task is not None:
-                        if sys.version_info < (3, 14, 0):
-                            curr_tasks[self] = curr_task
-                        else:
-                            asyncio.tasks._swap_current_task(self, curr_task)
+                    restore_current_task(self, curr_task, curr_tasks)
 
         handle = None
 
@@ -244,7 +162,6 @@ def _patch_loop(loop):
     @contextmanager
     def manage_asyncgens(self):
         if not hasattr(sys, "get_asyncgen_hooks"):
-            # Python version is too old.
             return
         old_agen_hooks = sys.get_asyncgen_hooks()
         try:
@@ -273,7 +190,7 @@ def _patch_loop(loop):
     cls.run_until_complete = run_until_complete
     cls._run_once = _run_once
     cls._check_running = _check_running
-    cls._check_runnung = _check_running  # typo in Python 3.7 source
+    cls._check_runnung = _check_running
     cls._num_runs_pending = 1 if loop.is_running() else 0
     cls._is_proactorloop = os.name == "nt" and issubclass(
         cls, asyncio.ProactorEventLoop

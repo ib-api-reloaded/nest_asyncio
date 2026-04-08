@@ -24,7 +24,7 @@ urls = { Homepage = "https://github.com/erdewit/nest_asyncio", Repository = "htt
 
 [tool.poetry]
 requires-poetry = ">=2.1"
-packages = [{ include = "nest_asyncio.py" }]
+packages = [{ include = "nest_asyncio" }]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<4.0"
@@ -54,5 +54,5 @@ quote-style = "double"
 
 [tool.mypy]
 python_version = "3.11"
-files = ["nest_asyncio.py"]
+files = ["nest_asyncio"]
 strict = false
