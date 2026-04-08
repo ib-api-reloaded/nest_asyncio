@@ -1,37 +1,58 @@
-[tool.poetry]
+[project]
 name = "nest_asyncio"
 version = "1.6.0"
 description = "Patch asyncio to allow nested event loops"
-authors = ["Ewald R. de Wit"]
-license = "BSD"
+authors = [{ name = "Ewald R. de Wit" }]
+license = "BSD-2-Clause"
 readme = "README.rst"
-homepage = "https://github.com/erdewit/nest_asyncio"
-repository = "https://github.com/erdewit/nest_asyncio"
+requires-python = ">=3.11"
+dependencies = []
 keywords = ["asyncio", "nested", "eventloop"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
-    "Programming Language :: Python :: 3.5",
-    "Programming Language :: Python :: 3.6",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
     "Framework :: AsyncIO"
 ]
+urls = { Homepage = "https://github.com/erdewit/nest_asyncio", Repository = "https://github.com/erdewit/nest_asyncio" }
+
+[tool.poetry]
+requires-poetry = ">=2.1"
+packages = [{ include = "nest_asyncio.py" }]
 
 [tool.poetry.dependencies]
-python = "^3.5"
+python = ">=3.11,<4.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
+ruff = "*"
+mypy = "*"
+
+[dependency-groups]
+dev = [
+    "ruff",
+    "mypy",
+]
+
+[tool.uv]
+default-groups = ["dev"]
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=2.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[tool.flake8]
-ignore = ["D205", "D400", "W503"]
+[tool.ruff]
+target-version = "py311"
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.11"
+files = ["nest_asyncio.py"]
+strict = false

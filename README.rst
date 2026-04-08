@@ -23,7 +23,7 @@ Installation
 
     pip3 install nest_asyncio
 
-Python 3.5 or higher is required.
+Python 3.11 or higher is required.
 
 Usage
 -----
@@ -39,6 +39,25 @@ An event loop can be patched whether it is already running
 or not. Only event loops from asyncio can be patched;
 Loops from other projects, such as uvloop or quamash,
 generally can't be patched.
+
+Development
+-----------
+
+This project is tested on CPython 3.11, 3.12, 3.13, 3.14, and PyPy 3.11.
+
+Using ``uv``:
+
+.. code-block:: bash
+
+    uv sync --group dev
+    uv run python -m unittest tests.nest_test
+
+Using ``poetry``:
+
+.. code-block:: bash
+
+    poetry install --with dev
+    poetry run python -m unittest tests.nest_test
 
 
 .. |Build| image:: https://github.com/erdewit/nest_asyncio/actions/workflows/test.yml/badge.svg?branche=master
@@ -58,4 +77,3 @@ generally can't be patched.
 .. |Downloads| image:: https://static.pepy.tech/badge/nest-asyncio/month
    :alt: Number of downloads
    :target: https://pepy.tech/project/nest-asyncio
-

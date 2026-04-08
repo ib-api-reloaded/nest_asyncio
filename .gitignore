@@ -2,4 +2,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 poetry.lock
+.venv/
+.uv-cache/
 dist/

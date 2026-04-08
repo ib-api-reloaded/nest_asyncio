@@ -22,6 +22,11 @@ def apply(loop=None):
 def _patch_asyncio():
     """Patch asyncio module to use pure Python tasks and futures."""
 
+    def _get_policy():
+        if sys.version_info >= (3, 14) and hasattr(events, "_get_event_loop_policy"):
+            return events._get_event_loop_policy()
+        return events.get_event_loop_policy()
+
     def run(main, *, debug=False):
         loop = asyncio.get_event_loop()
         loop.set_debug(debug)
@@ -37,7 +42,7 @@ def _patch_asyncio():
     def _get_event_loop(stacklevel=3):
         loop = events._get_running_loop()
         if loop is None:
-            loop = events.get_event_loop_policy().get_event_loop()
+            loop = _get_policy().get_event_loop()
         return loop
 
     # Use module level _current_tasks, all_tasks and patch run method.
@@ -48,6 +53,12 @@ def _patch_asyncio():
         asyncio.Future = asyncio.futures._CFuture = asyncio.futures.Future = (
             asyncio.futures._PyFuture
         )
+        if hasattr(asyncio.tasks, "_py_current_task"):
+            asyncio.tasks.current_task = asyncio.current_task = (
+                asyncio.tasks._py_current_task
+            )
+        if hasattr(asyncio.tasks, "_py_all_tasks"):
+            asyncio.tasks.all_tasks = asyncio.all_tasks = asyncio.tasks._py_all_tasks
     if sys.version_info < (3, 7, 0):
         asyncio.tasks._current_tasks = asyncio.tasks.Task._current_tasks
         asyncio.all_tasks = asyncio.tasks.Task.all_tasks
@@ -69,7 +80,10 @@ def _patch_policy():
             self.set_event_loop(loop)
         return self._local._loop
 
-    policy = events.get_event_loop_policy()
+    if sys.version_info >= (3, 14) and hasattr(events, "_get_event_loop_policy"):
+        policy = events._get_event_loop_policy()
+    else:
+        policy = events.get_event_loop_policy()
     policy.__class__.get_event_loop = get_event_loop
 
 
