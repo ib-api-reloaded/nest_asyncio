@@ -1,5 +1,8 @@
 import asyncio
+import pathlib
+import subprocess
 import sys
+import textwrap
 import unittest
 
 import nest_asyncio
@@ -10,6 +13,21 @@ def exception_handler(loop, context):
 
 
 class NestTest(unittest.TestCase):
+    @staticmethod
+    def run_snippet(snippet):
+        repo_root = pathlib.Path(__file__).resolve().parent.parent
+        result = subprocess.run(
+            [sys.executable, "-Wdefault", "-c", textwrap.dedent(snippet)],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise AssertionError(
+                f"snippet failed\nstdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+            )
+        return result
+
     def setUp(self):
         self.loop = asyncio.new_event_loop()
         nest_asyncio.apply(self.loop)
@@ -99,6 +117,33 @@ class NestTest(unittest.TestCase):
 
         result = self.loop.run_until_complete(coro())
         self.assertEqual(result, 42)
+
+    @unittest.skipIf(sys.version_info < (3, 12, 0), "No loop_factory support")
+    def test_asyncio_run_accepts_loop_factory(self):
+        self.run_snippet(
+            """
+            import asyncio
+            import nest_asyncio
+
+            nest_asyncio.apply()
+            asyncio.set_event_loop(None)
+            state = {"hit": False}
+
+            def loop_factory():
+                state["hit"] = True
+                return asyncio.new_event_loop()
+
+            async def work():
+                assert asyncio.get_running_loop() is not None
+
+            asyncio.run(work(), loop_factory=loop_factory)
+            assert state["hit"], state
+
+            loop = asyncio.get_event_loop()
+            loop.close()
+            asyncio.set_event_loop(None)
+            """
+        )
 
 
 if __name__ == "__main__":

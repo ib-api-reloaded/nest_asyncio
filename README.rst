@@ -16,6 +16,12 @@ GUI applications and in Jupyter notebooks.
 This module patches asyncio to allow nested use of ``asyncio.run`` and
 ``loop.run_until_complete``.
 
+Recent compatibility work in this repository adapts ideas first explored in
+`Chaoses-Ib/nest-asyncio2 <https://github.com/Chaoses-Ib/nest-asyncio2>`_,
+then rewrites them for the ``nest_asyncio`` codebase and packaging model.
+The first imported idea is Python 3.12+ support for
+``asyncio.run(..., loop_factory=...)``.
+
 Installation
 ------------
 
@@ -58,7 +64,6 @@ Using ``poetry``:
 
     poetry install --with dev
     poetry run python -m unittest tests.nest_test
-
 
 .. |Build| image:: https://github.com/erdewit/nest_asyncio/actions/workflows/test.yml/badge.svg?branche=master
    :alt: Build
