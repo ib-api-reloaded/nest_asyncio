@@ -39,7 +39,7 @@ def _patch_asyncio():
     asyncio._nest_patched = True
 
 
-def _run(main, *, debug=False, loop_factory=None):
+def _run(main, *, debug=None, loop_factory=None):
     """Delegate to the version-aware asyncio.run compatibility helper."""
     return compat_run(
         main,
@@ -146,6 +146,10 @@ def _patch_loop(loop):
             self._thread_id = old_thread_id
             events._set_running_loop(old_running_loop)
             self._num_runs_pending -= 1
+            if self._num_runs_pending == 0:
+                # Like the stdlib's _run_forever_cleanup: a stop() request
+                # ends the outermost run and must not leak into the next one.
+                self._stopping = False
             if self._is_proactorloop:
                 if (
                     self._num_runs_pending == 0

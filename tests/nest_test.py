@@ -125,23 +125,138 @@ class NestTest(unittest.TestCase):
 
             nest_asyncio.apply()
             asyncio.set_event_loop(None)
-            state = {"hit": False}
+            made = []
 
             def loop_factory():
-                state["hit"] = True
-                return asyncio.new_event_loop()
+                loop = asyncio.new_event_loop()
+                made.append(loop)
+                return loop
 
             async def work():
-                assert asyncio.get_running_loop() is not None
+                return asyncio.get_running_loop()
 
-            asyncio.run(work(), loop_factory=loop_factory)
-            assert state["hit"], state
+            ran_on = asyncio.run(work(), loop_factory=loop_factory)
+            assert len(made) == 1, made
+            assert ran_on is made[0]
+            assert made[0].is_closed()
 
-            loop = asyncio.get_event_loop()
-            loop.close()
+            try:
+                current = asyncio.get_event_loop()
+            except RuntimeError:
+                current = None
+            assert current is not made[0]
+            if current is not None:
+                current.close()
             asyncio.set_event_loop(None)
             """
         )
+
+    @unittest.skipIf(sys.version_info < (3, 12, 0), "No loop_factory support")
+    def test_asyncio_run_loop_factory_overrides_current_loop(self):
+        self.run_snippet(
+            """
+            import asyncio
+            import nest_asyncio
+
+            current = asyncio.new_event_loop()
+            asyncio.set_event_loop(current)
+            nest_asyncio.apply()
+            made = []
+
+            def loop_factory():
+                loop = asyncio.new_event_loop()
+                made.append(loop)
+                return loop
+
+            async def work():
+                return asyncio.get_running_loop()
+
+            async def outer():
+                return asyncio.run(work(), loop_factory=loop_factory)
+
+            ran_on = asyncio.run(work(), loop_factory=loop_factory)
+            assert len(made) == 1, made
+            assert ran_on is made[0]
+            assert made[0].is_closed()
+            assert asyncio.get_event_loop() is current
+
+            ran_on = current.run_until_complete(outer())
+            assert len(made) == 2, made
+            assert ran_on is made[1]
+            assert made[1].is_closed()
+            assert asyncio.get_event_loop() is current
+
+            current.close()
+            asyncio.set_event_loop(None)
+            """
+        )
+
+    @unittest.skipIf(sys.version_info < (3, 12, 0), "No loop_factory support")
+    def test_asyncio_run_closes_loop_factory_loop_it_cannot_patch(self):
+        self.run_snippet(
+            """
+            import asyncio
+            import nest_asyncio
+
+            nest_asyncio.apply()
+            asyncio.set_event_loop(None)
+
+            class UnpatchableLoop(asyncio.AbstractEventLoop):
+                closed = False
+
+                def close(self):
+                    self.closed = True
+
+            made = []
+
+            def loop_factory():
+                loop = UnpatchableLoop()
+                made.append(loop)
+                return loop
+
+            async def work():
+                pass
+
+            coro = work()
+            try:
+                asyncio.run(coro, loop_factory=loop_factory)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("expected ValueError")
+            coro.close()
+            assert len(made) == 1, made
+            assert made[0].closed
+
+            try:
+                current = asyncio.get_event_loop()
+            except RuntimeError:
+                current = None
+            assert current is not made[0]
+            if current is not None:
+                current.close()
+            asyncio.set_event_loop(None)
+            """
+        )
+
+    def test_run_until_complete_runs_again_after_stop(self):
+        fut = self.loop.create_future()
+        self.loop.call_soon(self.loop.stop)
+        with self.assertRaisesRegex(RuntimeError, "stopped before Future completed"):
+            self.loop.run_until_complete(fut)
+        fut.cancel()
+        self.assertEqual(self.loop.run_until_complete(self.coro()), 42)
+
+    def test_nested_run_leaves_outer_loop_debug_alone(self):
+        async def inner():
+            return asyncio.get_running_loop().get_debug()
+
+        async def outer():
+            return asyncio.run(inner())
+
+        self.assertTrue(self.loop.get_debug())
+        self.assertTrue(self.loop.run_until_complete(outer()))
+        self.assertTrue(self.loop.get_debug())
 
     @unittest.skipIf(sys.version_info < (3, 14, 0), "Python 3.14+ only")
     def test_apply_inside_running_task_preserves_current_task(self):

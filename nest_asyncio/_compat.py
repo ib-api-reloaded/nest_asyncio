@@ -95,10 +95,32 @@ def patch_asyncio_get_event_loop() -> None:
     events.get_event_loop = asyncio.get_event_loop = legacy_get_event_loop
 
 
+def _run_with_loop_factory(
+    main: Awaitable[object],
+    debug: bool | None,
+    loop_factory: Callable[[], asyncio.AbstractEventLoop],
+    patch_loop: Callable[[asyncio.AbstractEventLoop], None],
+) -> object:
+    """Run main on a fresh loop from loop_factory, as stdlib asyncio.run does.
+
+    The loop is never installed as the thread's current loop and is closed
+    afterwards; asyncio.Runner supplies the stdlib teardown for this version.
+    """
+    loop = loop_factory()
+    try:
+        patch_loop(loop)
+    except BaseException:
+        loop.close()
+        raise
+    with asyncio.Runner(debug=debug, loop_factory=lambda: loop) as runner:
+        task = asyncio.ensure_future(main, loop=runner.get_loop())
+        return loop.run_until_complete(task)
+
+
 def run(
     main: Awaitable[object],
     *,
-    debug: bool | None = False,
+    debug: bool | None = None,
     loop_factory: Callable[[], asyncio.AbstractEventLoop] | None = None,
     patch_loop: Callable[[asyncio.AbstractEventLoop], None],
 ) -> object:
@@ -107,7 +129,8 @@ def run(
         if loop_factory is not None:
             raise TypeError("run() got an unexpected keyword argument 'loop_factory'")
         loop = asyncio.get_event_loop()
-        loop.set_debug(bool(debug))
+        if debug is not None:
+            loop.set_debug(debug)
         task = asyncio.ensure_future(main)
         try:
             return loop.run_until_complete(task)
@@ -117,14 +140,15 @@ def run(
                 with suppress(asyncio.CancelledError):
                     loop.run_until_complete(task)
 
+    if loop_factory is not None:
+        return _run_with_loop_factory(main, debug, loop_factory, patch_loop)
+
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
         current_loop = get_event_loop_for_apply()
         if current_loop is None:
-            if loop_factory is None:
-                loop_factory = asyncio.new_event_loop
-            current_loop = loop_factory()
+            current_loop = asyncio.new_event_loop()
             asyncio.set_event_loop(current_loop)
         loop = current_loop
 
