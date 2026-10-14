@@ -86,3 +86,13 @@ quote-style = "double"
 python_version = "3.11"
 files = ["nest_asyncio"]
 strict = false
+
+[tool.releasekit]
+import-name = "nest_asyncio"
+smoke = "import asyncio; nest_asyncio.apply(asyncio.new_event_loop())"
+checks = ["make lint", "make test"]
+
+[tool.releasekit.matrix]
+python = ["3.11", "3.12", "3.13", "3.14", "3.15"]
+command = "make test"
+timeout = 120
