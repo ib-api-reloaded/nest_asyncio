@@ -5,3 +5,4 @@ poetry.lock
 .venv/
 .uv-cache/
 dist/
+.venvs/
