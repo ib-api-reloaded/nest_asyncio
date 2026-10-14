@@ -46,9 +46,17 @@ build-backend = "uv_build"
 # repo root.
 module-name = "nest_asyncio"
 module-root = ""
+# The sdist also carries the tests, so it can be verified where it is
+# rebuilt (distribution packagers).
+source-include = ["tests/**/*.py"]
 # Local tool output that can sit inside the package directory.
 wheel-exclude = ["**/.DS_Store", "**/.ruff_cache", "**/.mypy_cache"]
-source-exclude = ["**/.DS_Store", "**/.ruff_cache", "**/.mypy_cache"]
+source-exclude = [
+  "**/.DS_Store",
+  "**/.ruff_cache",
+  "**/.mypy_cache",
+  "**/__pycache__",
+]
 
 [tool.ruff]
 target-version = "py311"

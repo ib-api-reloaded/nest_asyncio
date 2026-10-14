@@ -13,8 +13,8 @@ public API, so existing code keeps working unchanged:
     import nest_asyncio
     nest_asyncio.apply()
 
-It adds support for current Python releases (3.11 through 3.14),
-including Python 3.14's task and event-loop changes.
+It supports current Python releases (CPython 3.11 through 3.15, and
+PyPy 3.11), including Python 3.14's task and event-loop changes.
 
 Install either ``anest-asyncio`` or the original ``nest_asyncio``, not
 both: they provide the same ``nest_asyncio`` module.
@@ -69,19 +69,51 @@ or not. Only event loops from asyncio can be patched;
 Loops from other projects, such as uvloop or quamash,
 generally can't be patched.
 
+On Python 3.12 and later, ``apply()`` without a running or current loop
+does not create one: it patches asyncio itself, and the patched
+``asyncio.run`` patches every loop it uses before running on it.
+
+The patched ``asyncio.run(main)`` differs from the standard one so that it
+can nest:
+
+* it runs ``main`` on the running or current event loop (creating and
+  setting one when there is none) and leaves that loop open afterwards;
+* with ``loop_factory=...`` (Python 3.12+) it runs ``main`` on a new loop
+  from the factory, as the standard ``asyncio.run`` does: that loop is
+  not made the current loop, and is closed afterwards;
+* ``debug`` defaults to ``None``: the loop's debug mode (and
+  ``PYTHONASYNCIODEBUG`` / ``-X dev``) is left as it is unless ``debug``
+  is given.
+
 Development
 -----------
 
-This project is tested on CPython 3.11, 3.12, 3.13, 3.14, and PyPy 3.11.
+This project is tested on CPython 3.11, 3.12, 3.13, 3.14, 3.15 and PyPy
+3.11.
 
 Using ``uv``:
 
 .. code-block:: bash
 
     uv sync --group dev
-    make test         # default interpreter
-    make test-matrix  # 3.11 - 3.14, one isolated environment each
+    make test         # default interpreter, only the package installed
+    make test-matrix  # every tested Python, one isolated environment each
     make lint         # ruff + mypy
+
+Releasing
+---------
+
+Releases are made from ``main`` on a maintainer machine with releasekit
+(configured under ``[tool.releasekit]`` in ``pyproject.toml``); CI does
+not publish. The version is set in one place, ``[project].version`` in
+``pyproject.toml``: the package metadata, the release checks and the git
+tag (``v<version>``) all come from it.
+
+.. code-block:: bash
+
+    make release-check    # every reason not to publish this version now
+    make publish-dry-run  # everything local; prints the upload and tag steps
+    make publish          # upload, tag, verify the release from PyPI
 
 Acknowledgements
 ----------------
