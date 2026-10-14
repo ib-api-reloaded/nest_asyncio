@@ -4,6 +4,7 @@ import subprocess
 import sys
 import textwrap
 import unittest
+from contextvars import ContextVar
 
 import nest_asyncio
 
@@ -100,10 +101,7 @@ class NestTest(unittest.TestCase):
         result = self.loop.run_until_complete(asyncio.gather(f1(), f2()))
         self.assertEqual(result, [4, 2])
 
-    @unittest.skipIf(sys.version_info < (3, 7, 0), "No contextvars module")
     def test_contextvars(self):
-        from contextvars import ContextVar
-
         var = ContextVar("var")
         var.set(0)
 
@@ -187,6 +185,43 @@ class NestTest(unittest.TestCase):
 
             asyncio.run(outer())
             assert seen == ["soon"], seen
+            """
+        )
+
+    def test_apply_registers_the_asyncio_future_with_an_imported_tornado(self):
+        self.run_snippet(
+            """
+            import asyncio
+            import sys
+            import types
+
+            tornado = types.ModuleType("tornado")
+            concurrent = types.ModuleType("tornado.concurrent")
+            concurrent.Future = object
+            concurrent.FUTURES = (object,)
+            tornado.concurrent = concurrent
+            sys.modules["tornado"] = tornado
+            sys.modules["tornado.concurrent"] = concurrent
+
+            import nest_asyncio
+
+            nest_asyncio.apply(asyncio.new_event_loop())
+            assert concurrent.Future is asyncio.Future
+            assert concurrent.FUTURES == (object, asyncio.Future)
+            nest_asyncio.apply(asyncio.new_event_loop())
+            assert concurrent.FUTURES == (object, asyncio.Future)
+            """
+        )
+
+    def test_apply_leaves_tornado_alone_unless_imported(self):
+        self.run_snippet(
+            """
+            import asyncio
+            import sys
+            import nest_asyncio
+
+            nest_asyncio.apply(asyncio.new_event_loop())
+            assert "tornado" not in sys.modules
             """
         )
 

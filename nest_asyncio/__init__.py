@@ -2,6 +2,7 @@
 
 import asyncio
 import asyncio.events as events
+import importlib
 import os
 import sys
 import threading
@@ -199,7 +200,7 @@ def _patch_tornado():
     the pure-Python asyncio Future.
     """
     if "tornado" in sys.modules:
-        import tornado.concurrent as tc  # type: ignore[import-not-found]
+        tc = importlib.import_module("tornado.concurrent")
 
         tc.Future = asyncio.Future
         if asyncio.Future not in tc.FUTURES:

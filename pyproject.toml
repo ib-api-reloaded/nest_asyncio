@@ -93,6 +93,6 @@ smoke = "import asyncio; nest_asyncio.apply(asyncio.new_event_loop())"
 checks = ["make lint", "make test"]
 
 [tool.releasekit.matrix]
-python = ["3.11", "3.12", "3.13", "3.14", "3.15"]
+python = ["3.11", "3.12", "3.13", "3.14", "3.15", "pypy3.11"]
 command = "make test"
 timeout = 120

@@ -15,8 +15,8 @@ help:
 	@echo "  ruff            - ruff check and ruff format --check"
 	@echo "  typecheck       - mypy over the package"
 	@echo "  lint            - ruff + typecheck"
-	@echo "  test            - run the tests on the current interpreter"
-	@echo "                    (UV_PYTHON selects another one)"
+	@echo "  test            - run the tests on the current interpreter, with only the"
+	@echo "                    package installed (UV_PYTHON selects another one)"
 	@echo "  test-matrix     - run the tests on each configured Python version, each"
 	@echo "                    in its own .venvs/py<version> environment and time-boxed;"
 	@echo "                    logs in .venvs/logs/ (PYTHONS=\"3.13 3.15\" for a subset)"
@@ -37,7 +37,7 @@ typecheck:
 lint: ruff typecheck
 
 test:
-	uv run $(TEST)
+	uv run --no-dev $(TEST)
 
 test-matrix:
 	$(RELEASEKIT) matrix $(foreach v,$(PYTHONS),--python=$(v))
