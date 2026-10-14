@@ -9,8 +9,9 @@ from __future__ import annotations
 import asyncio
 import asyncio.events as events
 import sys
+from collections.abc import Awaitable, Callable
 from contextlib import suppress
-from typing import Awaitable, Callable, Protocol
+from typing import Protocol
 
 IS_PY312_PLUS = sys.version_info >= (3, 12, 0)
 IS_PY314_PLUS = sys.version_info >= (3, 14, 0)
@@ -50,7 +51,7 @@ def get_event_loop_for_apply() -> asyncio.AbstractEventLoop | None:
         loop = events._get_running_loop()
         if loop is None:
             policy = events.get_event_loop_policy()
-            loop = policy._local._loop
+            loop = policy._local._loop  # type: ignore[attr-defined]
         return loop
     try:
         return asyncio.get_event_loop()

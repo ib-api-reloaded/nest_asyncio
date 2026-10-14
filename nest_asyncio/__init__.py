@@ -8,13 +8,13 @@ import threading
 from contextlib import contextmanager
 from heapq import heappop
 
-from ._compat import get_event_loop_for_apply
-from ._compat import patch_asyncio_get_event_loop
-from ._compat import patch_task_and_future_types
+from ._compat import (
+    get_event_loop_for_apply,
+    patch_asyncio_get_event_loop,
+    patch_task_and_future_types,
+)
 from ._compat import run as compat_run
-from ._loop import drain_ready
-from ._loop import preempt_current_task
-from ._loop import restore_current_task
+from ._loop import drain_ready, preempt_current_task, restore_current_task
 
 
 def apply(loop=None):
@@ -179,7 +179,7 @@ def _patch_loop(loop):
     if hasattr(loop, "_nest_patched"):
         return
     if not isinstance(loop, asyncio.BaseEventLoop):
-        raise ValueError("Can't patch loop of type %s" % type(loop))
+        raise ValueError(f"Can't patch loop of type {type(loop)}")
     cls = loop.__class__
     cls.run_forever = run_forever
     cls.run_until_complete = run_until_complete
@@ -199,7 +199,7 @@ def _patch_tornado():
     the pure-Python asyncio Future.
     """
     if "tornado" in sys.modules:
-        import tornado.concurrent as tc  # type: ignore
+        import tornado.concurrent as tc  # type: ignore[import-not-found]
 
         tc.Future = asyncio.Future
         if asyncio.Future not in tc.FUTURES:
