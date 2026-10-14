@@ -33,9 +33,6 @@ def _patch_asyncio():
     if hasattr(asyncio, "_nest_patched"):
         return
     patch_task_and_future_types()
-    if sys.version_info < (3, 7, 0):
-        asyncio.tasks._current_tasks = asyncio.tasks.Task._current_tasks
-        asyncio.all_tasks = asyncio.tasks.Task.all_tasks
     patch_asyncio_get_event_loop()
     asyncio.run = _run
     asyncio._nest_patched = True
@@ -161,8 +158,6 @@ def _patch_loop(loop):
 
     @contextmanager
     def manage_asyncgens(self):
-        if not hasattr(sys, "get_asyncgen_hooks"):
-            return
         old_agen_hooks = sys.get_asyncgen_hooks()
         try:
             self._set_coroutine_origin_tracking(self._debug)
@@ -190,18 +185,11 @@ def _patch_loop(loop):
     cls.run_until_complete = run_until_complete
     cls._run_once = _run_once
     cls._check_running = _check_running
-    cls._check_runnung = _check_running
     cls._num_runs_pending = 1 if loop.is_running() else 0
     cls._is_proactorloop = os.name == "nt" and issubclass(
         cls, asyncio.ProactorEventLoop
     )
-    if sys.version_info < (3, 7, 0):
-        cls._set_coroutine_origin_tracking = cls._set_coroutine_wrapper
-    curr_tasks = (
-        asyncio.tasks._current_tasks
-        if sys.version_info >= (3, 7, 0)
-        else asyncio.Task._current_tasks
-    )
+    curr_tasks = asyncio.tasks._current_tasks
     cls._nest_patched = True
 
 

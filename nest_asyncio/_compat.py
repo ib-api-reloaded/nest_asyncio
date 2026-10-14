@@ -68,7 +68,7 @@ def legacy_get_event_loop(stacklevel: int = 3) -> asyncio.AbstractEventLoop:
 
 def patch_task_and_future_types() -> None:
     """Use pure-Python Task/Future implementations where that remains safe."""
-    if sys.version_info < (3, 6, 0) or IS_PY314_PLUS:
+    if IS_PY314_PLUS:
         return
     py_task = _get_task_type("_PyTask")
     py_future = _get_future_type("_PyFuture")
@@ -88,7 +88,7 @@ def patch_task_and_future_types() -> None:
 
 def patch_asyncio_get_event_loop() -> None:
     """Patch asyncio.get_event_loop only where the legacy behavior is needed."""
-    if sys.version_info < (3, 9, 0) or IS_PY314_PLUS:
+    if IS_PY314_PLUS:
         return
     setattr(events, "_get_event_loop", legacy_get_event_loop)
     events.get_event_loop = asyncio.get_event_loop = legacy_get_event_loop
