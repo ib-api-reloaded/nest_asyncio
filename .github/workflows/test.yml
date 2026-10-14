@@ -31,7 +31,7 @@ jobs:
 
       - name: Testsuite
         run: |
-          uv run --python "${{ steps.setup-python.outputs.python-path }}" --no-sync python -m unittest tests.nest_test
+          uv run --python "${{ steps.setup-python.outputs.python-path }}" --no-sync python -W error::DeprecationWarning -m unittest tests.nest_test
 
   checks:
     name: checks (${{ matrix.python-version }})
@@ -86,4 +86,4 @@ jobs:
           poetry install --with dev
       - name: Run tests with Poetry
         run: |
-          poetry run python -m unittest tests.nest_test
+          poetry run python -W error::DeprecationWarning -m unittest tests.nest_test
