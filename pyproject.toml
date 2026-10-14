@@ -4,6 +4,7 @@ version = "2.0.0"
 description = "Patch asyncio to allow nested event loops"
 authors = [{ name = "Ewald R. de Wit" }]
 license = "BSD-2-Clause"
+license-files = ["LICENSE"]
 readme = "README.rst"
 requires-python = ">=3.11"
 dependencies = []
@@ -26,19 +27,6 @@ Homepage = "https://github.com/ib-api-reloaded/nest_asyncio"
 Repository = "https://github.com/ib-api-reloaded/nest_asyncio"
 "Bug Tracker" = "https://github.com/ib-api-reloaded/nest_asyncio/issues"
 
-[tool.poetry]
-requires-poetry = ">=2.1"
-# Published as `anest-asyncio` but imported as `nest_asyncio`, so the
-# package to include is named explicitly.
-packages = [{ include = "nest_asyncio" }]
-
-[tool.poetry.dependencies]
-python = ">=3.11,<4.0"
-
-[tool.poetry.group.dev.dependencies]
-ruff = ">=0.17.0,<0.18.0"
-mypy = "*"
-
 [dependency-groups]
 dev = [
     "ruff>=0.17.0,<0.18.0",
@@ -49,8 +37,17 @@ dev = [
 default-groups = ["dev"]
 
 [build-system]
-requires = ["poetry-core>=2.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.10.10,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+# Published as `anest-asyncio` but imported as `nest_asyncio`, from the
+# repo root.
+module-name = "nest_asyncio"
+module-root = ""
+# Local tool output that can sit inside the package directory.
+wheel-exclude = ["**/.DS_Store", "**/.ruff_cache", "**/.mypy_cache"]
+source-exclude = ["**/.DS_Store", "**/.ruff_cache", "**/.mypy_cache"]
 
 [tool.ruff]
 target-version = "py311"

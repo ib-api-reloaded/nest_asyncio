@@ -83,13 +83,6 @@ Using ``uv``:
     make test-matrix  # 3.11 - 3.14, one isolated environment each
     make lint         # ruff + mypy
 
-Using ``poetry``:
-
-.. code-block:: bash
-
-    poetry install --with dev
-    poetry run python -m unittest tests.nest_test
-
 Acknowledgements
 ----------------
 
