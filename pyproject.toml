@@ -1,6 +1,6 @@
 [project]
-name = "nest_asyncio"
-version = "1.6.0"
+name = "anest-asyncio"
+version = "2.0.0"
 description = "Patch asyncio to allow nested event loops"
 authors = [{ name = "Ewald R. de Wit" }]
 license = "BSD-2-Clause"
@@ -20,10 +20,16 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
     "Framework :: AsyncIO"
 ]
-urls = { Homepage = "https://github.com/erdewit/nest_asyncio", Repository = "https://github.com/erdewit/nest_asyncio" }
+
+[project.urls]
+Homepage = "https://github.com/ib-api-reloaded/nest_asyncio"
+Repository = "https://github.com/ib-api-reloaded/nest_asyncio"
+"Bug Tracker" = "https://github.com/ib-api-reloaded/nest_asyncio/issues"
 
 [tool.poetry]
 requires-poetry = ">=2.1"
+# Published as `anest-asyncio` but imported as `nest_asyncio`, so the
+# package to include is named explicitly.
 packages = [{ include = "nest_asyncio" }]
 
 [tool.poetry.dependencies]

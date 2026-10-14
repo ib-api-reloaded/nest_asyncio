@@ -1,4 +1,23 @@
+anest-asyncio
+=============
+
 |Build| |Status| |PyPiVersion| |License| |Downloads|
+
+``anest-asyncio`` is the maintained continuation of ``nest_asyncio``,
+published under a new name by the ib-api-reloaded project alongside
+``aeventkit`` and ``ib_async``. It keeps the original import name and
+public API, so existing code keeps working unchanged:
+
+.. code-block:: python
+
+    import nest_asyncio
+    nest_asyncio.apply()
+
+It adds support for current Python releases (3.11 through 3.14),
+including Python 3.14's task and event-loop changes.
+
+Install either ``anest-asyncio`` or the original ``nest_asyncio``, not
+both: they provide the same ``nest_asyncio`` module.
 
 Introduction
 ------------
@@ -31,7 +50,7 @@ Installation
 
 .. code-block::
 
-    pip3 install nest_asyncio
+    pip install anest-asyncio
 
 Python 3.11 or higher is required.
 
@@ -60,7 +79,9 @@ Using ``uv``:
 .. code-block:: bash
 
     uv sync --group dev
-    uv run python -m unittest tests.nest_test
+    make test         # default interpreter
+    make test-matrix  # 3.11 - 3.14, one isolated environment each
+    make lint         # ruff + mypy
 
 Using ``poetry``:
 
@@ -78,13 +99,13 @@ core project. The code here intentionally keeps the original ``nest_asyncio``
 public interface while incorporating the useful runtime fixes discovered in
 that fork.
 
-.. |Build| image:: https://github.com/erdewit/nest_asyncio/actions/workflows/test.yml/badge.svg?branche=master
+.. |Build| image:: https://github.com/ib-api-reloaded/nest_asyncio/actions/workflows/test.yml/badge.svg
    :alt: Build
-   :target: https://github.com/erdewit/nest_asyncio/actions
+   :target: https://github.com/ib-api-reloaded/nest_asyncio/actions
 
-.. |PyPiVersion| image:: https://img.shields.io/pypi/v/nest_asyncio.svg
+.. |PyPiVersion| image:: https://img.shields.io/pypi/v/anest-asyncio.svg
    :alt: PyPi
-   :target: https://pypi.python.org/pypi/nest_asyncio
+   :target: https://pypi.org/project/anest-asyncio/
 
 .. |Status| image:: https://img.shields.io/badge/status-stable-green.svg
    :alt:
@@ -92,6 +113,6 @@ that fork.
 .. |License| image:: https://img.shields.io/badge/license-BSD-blue.svg
    :alt:
 
-.. |Downloads| image:: https://static.pepy.tech/badge/nest-asyncio/month
+.. |Downloads| image:: https://static.pepy.tech/badge/anest-asyncio/month
    :alt: Number of downloads
-   :target: https://pepy.tech/project/nest-asyncio
+   :target: https://pepy.tech/project/anest-asyncio
